@@ -1,0 +1,111 @@
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from datetime import date
+import calendar
+import matplotlib.pyplot as plt
+import seaborn as sns
+%matplotlib inline
+
+train = pd.read_csv("train_qnU1GcL.csv")
+
+train= train.drop('sourcing_channel',axis=1)
+
+test = pd.read_csv("test_LxCaReE_DvdCKVT2_7rMflxW_O46whsi_lVTFXAY_pNfwkkx.csv")
+
+train.head()
+
+test.head()
+
+train.shape
+
+test.shape
+
+train.columns
+
+test.columns
+
+corr = train[['id','perc_premium_paid_by_cash_credit', 'age_in_days', 'Income',
+       'Count_3-6_months_late', 'Count_6-12_months_late',
+       'Count_more_than_12_months_late', 'application_underwriting_score',
+       'no_of_premiums_paid', 'target']].corr()
+mask = np.array(corr)
+mask[np.tril_indices_from(mask)] = False
+fig,ax= plt.subplots()
+fig.set_size_inches(20,10)
+sn.heatmap(corr, mask=mask,vmax=.9, square=True,annot=True, cmap="YlGnBu")
+
+train.dtypes
+
+sn.distplot(train["target"])
+
+sn.distplot(train["age_in_days"])
+
+train.isnull().sum()
+
+train.fillna(0,inplace=True)
+
+train.isnull().sum()
+
+test.isnull().sum()
+
+test.fillna(0,inplace=True)
+
+test.isnull().sum()
+
+from sklearn.linear_model import LogisticRegression
+
+lModel = LogisticRegression()
+
+X_train =train[train['age_in_days']<=28000]
+validation = train[train['age_in_days']>28000]
+
+X_train = train.drop('target',1)
+y_train = train['target']
+X_val = validation.drop('target',1)
+y_val = validation['target']
+
+X_train.shape, y_train.shape, X_val.shape, y_val.shape
+
+X_train=pd.get_dummies(X_train)
+X_val=pd.get_dummies(X_val)
+
+lModel.fit(X_train,y_train)
+
+prediction = lModel.predict(X_val)
+
+prediction.shape
+
+def rmsle(y, y_):
+    log1 = np.nan_to_num(np.array([np.log(v + 1) for v in y]))
+    log2 = np.nan_to_num(np.array([np.log(v + 1) for v in y_]))
+    calc = (log1 - log2) ** 2
+    return np.sqrt(np.mean(calc))
+    
+rmsle(y_val,prediction)
+
+lModel.score(X_train,y_train)
+
+from sklearn.tree import DecisionTreeRegressor
+
+dt_reg = DecisionTreeRegressor(max_depth=7,min_samples_leaf=4)
+
+dt_reg.fit(X_train, y_train)
+
+predict = dt_reg.predict(X_val)
+
+rmsle(y_val, predict)
+
+test=test.drop('sourcing_channel',1)
+
+test_prediction = dt_reg.predict(test)
+
+test=pd.get_dummies(test)
+
+p1 = pd.DataFrame()
+
+p1['target'] = test_prediction
+
+p1.to_csv('p1.csv', header=True, index=False)
+
+dt_reg.score(X_train, y_train)
